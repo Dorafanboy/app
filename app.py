@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
 from __future__ import division, print_function
+from wand.image import Image
+from PIL import Image
 from flask import Flask, request, \
         render_template, redirect, url_for,\
         session, send_file
@@ -8,8 +11,10 @@ from flask_wtf import FlaskForm,RecaptchaField
 from wtforms import (StringField,SubmitField,
                      DateTimeField, RadioField,
                      SelectField,TextAreaField, DateField)
-
+import lxml.etree as ET
 from wtforms.validators import DataRequired
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import sys
 import os
 import glob
@@ -19,10 +24,18 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
+from werkzeug.utils import secure_filename
+from keras.preprocessing import image
+from keras.applications.imagenet_utils import preprocess_input, decode_predictions
+from keras.models import load_model
+from keras.applications.resnet50 import ResNet50
+from gevent.pywsgi import WSGIServer
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, Activation
+from tensorflow.keras.models import Sequential
 import matplotlib.pyplot as plt
-from PIL import Image
+import matplotlib.image as mpimg
+
 
 #keras
 import tensorflow.keras as krs
@@ -71,120 +84,88 @@ def home():
 def result():
     return "Thanks {}".format(session["name"])
 # MAIN NEIRON
+model = ResNet50(weights='imagenet')
+# model.save('DogCat.h5')
+MODEL_PATH = 'DogCat.h5'
 
-SIZE = 224
+# Load your trained model
+# model.load_weights(MODEL_PATH)
+model.make_predict_function()          # Necessary
+# print('Model loaded. Start serving...')
 
-train, _ = tfds.load('cats_vs_dogs', split=['train[:1%]'], with_info=True, as_supervised=True)
+# You can also use pretrained model from Keras
+# Check https://keras.io/applications/
 
-for img, lable in train[0].take(1):
-  plt.figure()
-  plt.imshow(img)
-  print(lable)
+print('Model loaded. Check http://127.0.0.1:5000/')
+def model_predict(img_path, model):
+    img = image.load_img(img_path, target_size=(224, 224))
 
-def resize_image(img, lable):
-  img = tf.cast(img, tf.float32)
-  img = tf.image.resize(img,(SIZE, SIZE))
-  img = img / 255.0
-  return img, lable
+    # Preprocessing the image
+    x = image.img_to_array(img)
+    # x = np.true_divide(x, 255)
+    x = np.expand_dims(x, axis=0)
 
-train_resized = train[0].map(resize_image)
-train_batches = train_resized.shuffle(1000).batch(16)
+    # Be careful how your trained model deals with the input
+    # otherwise, it won't make correct prediction!
+    x = preprocess_input(x, mode='caffe')
 
-#Сверточная нейросеть
-base_layers = tf.keras.applications.MobileNetV2(input_shape=(SIZE, SIZE, 3), include_top=False)
-base_layers.trainable = False
+    preds = model.predict(x)
+    return preds
 
-model = tf.keras.Sequential([
-                             base_layers,
-                             GlobalAveragePooling2D(),
-                             Dropout(0.2),
-                             Dense(1)
-])
-model.compile(optimizer='adam', loss=tf.keras.losses.BinaryCrossentropy(from_logits=True), metrics=['accuracy'])
-
-model.fit(train_batches, epochs=1)
-
-files.upload=open('C:\\screens\\1.jpg', 'r') # Загружаем свою фотку
-
-img = load_img('golder-retriever-puppy.jpg')
-img_array = img_to_array(img)
-img_resized, _ = resize_image(img_array, _)
-img_expended = np.expand_dims(img_resized, axis=0)
-model.predict(img_expended)
-
-files.cv2.imread('screens')
-
-for i in range(6):
-  img = load_img(f'{i+1}.jpg')
-  img_array = img_to_array(img)
-  img_resized, _ = resize_image(img_array, _)
-  img_expended = np.expand_dims(img_resized, axis=0)
-  prediction = model.predict(img_expended)[0][0]
-  pred_label = 'КОТ' if prediction < 0.5 else 'СОБАКА'
-  plt.figure()
-  plt.imshow(img)
-  plt.title(f'{pred_label} {prediction}')
+@app.route('/', methods=['GET'])
+def index():
+    # Main page
+    return render_template('list.html')
 
 
+@app.route('/predict', methods=['GET', 'POST'])
+def upload():
+    if request.method == 'POST':
+        # Get the file from post request
+        f = request.files['file']
 
+        # Save the file to ./uploads
+        basepath = os.path.dirname(__file__)
+        file_path = os.path.join(
+        basepath, 'uploads', secure_filename(f.filename))
 
-# dic = {0 : 'Cat', 1 : 'Dog'}
-#
-# #model = cv2.imread('./static/model.h5')
-# nw = 224
-# nh = 224
-# ncol = 3
-# visible2 = krs.layers.Input(shape=(nh,nw,ncol), name = 'imginp')
-# resnet = krs.applications.resnet_v2.ResNet50V2(include_top=True,
-# weights='imagenet', input_tensor=visible2,
-# input_shape=None, pooling=None, classes=1000)
-#
-#
-# def predict_label(img_path):
-# 	i = cv2.imread(img_path, target_size=(100,100))
-# 	i = image.img_to_array(i)/255.0
-# 	i = i.reshape(1, 100,100,3)
-# 	p = resnet.predict_classes(i)
-#
-# 	return dic[p[0]]
-#
-# # routes
-# @app.route("/", methods=['GET', 'POST'])
-# def main():
-# 	return render_template("index.html")
-#
-# @app.route("/about")
-# def about_page():
-# 	return "Please subscribe  Artificial Intelligence Hub..!!!"
-#
-# @app.route("/submit", methods = ['GET', 'POST'])
-# def get_output():
-# 	if request.method == 'POST':
-# 		img = request.files['my_image']
-#
-# 		img_path = "static/" + img.filename
-# 		img.save(img_path)
-#
-# 		p = predict_label(img_path)
-#
-# 	return render_template("index.html", prediction = p, img_path = img_path)
-# file_name = 'reed_college_courses.xml'
-# full_file = os.path.abspath(os.path.join('data', file_name))
-#
-# dom = ElementTree.parse(full_file)
-#
-# courses = dom.findall('course')
-#
-# for c in courses:
-#
-#     title = c.find('title').text
-#     num = c.find('crse').text
-#     days = c.find('days').text
-#
-#     print(' * {} [{}] {} *='.format(
-#         num, days, title
-#     ))
+        # Make prediction
+        preds = model_predict(file_path, model)
 
+        # Process your result for human
+        pred_class = decode_predictions(preds, top=1)   # ImageNet Decode
+        result = str(pred_class[0][0][1])               # Convert to string
+        return result
+
+@app.route("/",methods=['GET','POST'])
+def apixml():
+    #парсим xml файл в dom
+    dom = ET.parse("file.xslt")
+    #парсим шаблон в dom
+    xslt = ET.parse("file.xml")
+    #получаем трансформер
+    transform = ET.XSLT(xslt)
+    #преобразуем xml с помощью трансформера xslt
+    newhtml = transform(dom)
+    #преобразуем из памяти dom в строку, возможно, понадобится указать кодировку
+    strfile = ET.tostring(newhtml)
+    return strfile
+@app.route('/img', methods=['GET', 'POST'])
+def intensivity():
+    if request.method == 'POST':
+        img = mpimg.imread('C:\\Users\\днс\\Desktop\\qrwfsfsfs\\pythonnn\\uploads\\1.jpg')
+        lum_img = img[:, :, 0]
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 2, 1)
+        imgplot = plt.imshow(img)
+        ax.set_title('Before')
+        plt.colorbar(ticks=[1, 50, 150, 250], orientation='horizontal')
+        ax = fig.add_subplot(1, 2, 2)
+        imgplot = plt.imshow(lum_img)
+        imgplot.set_clim(100.0, 0.7)
+        ax.set_title('After')
+        x = plt.colorbar(ticks=[1, 50, 100, 200], orientation='horizontal')
+        return x
 if __name__ == "__main__":
     app.run(debug=True)
 

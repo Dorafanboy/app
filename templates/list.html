@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
-<head>
-
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-
-<body>
-
-
-<div class="container py=4">
+{% extends "base.html" %} {% block content %}
     <h1 class="display-4 text-danger text-center">Flask WTF Forms</h1>
 
     <form class="p-3 mx-auto form-group" action="/" method="POST">
@@ -43,21 +30,74 @@
                 <div class="form-group">
                     {{ form.submit(class="btn-sm btn-primary form-control ")  }}
                 </div>
-
         </div>
     </form>
-    <center>
-    <div class="cont">
-        <h2>WELCOME <br> TO CAT-DOG PREDICTION</h2>
-    </div>
-    <form method = "POST" action="{{url_for('home')}}" enctype="multipart/form-data">
-        <input type="file" name = "image" class="btn"><br><br><br>
-        <input type="submit" class="btn">
+    <div>
+    <form id="upload-file" method="post" enctype="multipart/form-data">
+        <label for="imageUpload" class="upload-label">
+            Choose...
+        </label>
+        <input type="file" name="file" id="imageUpload" accept=".png, .jpg, .jpeg">
     </form>
-        </center>
 
-</div>
+    <div class="image-section" style="display:none;">
+        <div class="img-preview">
+            <div id="imagePreview">
+            </div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary btn-lg " id="btn-predict">Predict!</button>
+        </div>
+    </div>
 
-</body>
+    <div class="loader" style="display:none;"></div>
 
-</html>
+    <h3 id="result">
+        <span> </span>
+    </h3>
+    </div>
+        <div>
+    <form id="upload-file1" method="post" enctype="multipart/form-data">
+        <label for="imageUpload1" class="upload-label1">
+            Choose...
+        </label>
+        <input type="file" name="file" id="imageUpload1" accept=".png, .jpg, .jpeg">
+    </form>
+    <div class="image-sect" style="display:none;">
+        <div class="img-intens">
+            <div id="imageIntens">
+            </div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary btn-lg " id="btn-intens">Image!</button>
+        </div>
+    </div>
+
+    <div class="loading" style="display:none;"></div>
+
+    <h3 id="resulting">
+        <span> </span>
+    </h3>
+    </div>
+{#    <XML ID="PEOPLE" SRC="file.xml"></XML>#}
+{#    <TABLE DATASRC="#PEOPLE">#}
+{#      <THEAD>#}
+{#         <TH>man</TH>#}
+{#         <TH>name</TH>#}
+{#         <TH>age</TH>#}
+{#         <TH>work</TH>#}
+{#      </THEAD>#}
+{#      <TR ALIGN="center">#}
+{#         <TD DATAFLD="MAN">1</TD>#}
+{#         <TD DATAFLD="NAME">John</TD>#}
+{#         <TD DATAFLD="AGE">30</TD>#}
+{#         <TD DATAFLD="WORK">Driver</TD>#}
+{#      </TR>#}
+{#     <TR ALIGN="center">#}
+{#         <TD DATAFLD="MAN">2</TD>#}
+{#         <TD DATAFLD="NAME">Lisa</TD>#}
+{#         <TD DATAFLD="AGE">20</TD>#}
+{#         <TD DATAFLD="WORK">Programmist</TD>#}
+{#      </TR>#}
+{#    </TABLE>#}
+{% endblock %}
